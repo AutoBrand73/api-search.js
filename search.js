@@ -1,122 +1,131 @@
+// Vercel Serverless Function: api/search.js
 export default async function handler(req, res) {
-    const SUPABASE_URL = 'https://fnlupijomjpopqtnyodv.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_l1pVfFfga-1Tu9Yr1ms2Lw_PrY1CoZw';
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Token');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    const query = (req.query.q || '').trim();
-    if (!query) return res.status(400).json({ ok: false, error: 'Пустой запрос' });
-
-    // Проверяем авторизацию: цены доступны только зарегистрированным
-    const token = req.headers['x-user-token'] || '';
-    let userId = null;
-    if (token) {
-        try {
-            const uRes = await fetch(SUPABASE_URL + '/auth/v1/user', {
-                headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
-            });
-            if (uRes.ok) {
-                const u = await uRes.json();
-                if (u && u.id) userId = u.id;
-            }
-        } catch (e) {}
+  const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!auth) {
+    res.status(401).json({ error: 'Требуется вход в аккаунт' });
+    return;
+  }
+  let userId = null;
+  try {
+    const authRes = await fetch(
+      process.env.SUPABASE_URL + '/auth/v1/user',
+      { headers: { Authorization: 'Bearer ' + auth, apikey: process.env.SUPABASE_ANON_KEY } }
+    );
+    if (authRes.status !== 200) {
+      res.status(401).json({ error: 'Сессия истекла, войдите заново' });
+      return;
     }
-    if (!userId) return res.status(401).json({ ok: false, error: 'Требуется вход в аккаунт' });
+    const authData = await authRes.json();
+    userId = authData && authData.id ? authData.id : null;
+  } catch (e) {
+    res.status(401).json({ error: 'Не удалось проверить авторизацию' });
+    return;
+  }
 
-    const headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+  const q = (req.query.q || '').trim();
+  if (!q) { res.status(400).json({ error: 'Пустой запрос' }); return; }
+  const testSupplierId = (req.query.supplier || '').trim();
 
-    // 1. Загружаем наценки и активных поставщиков из базы
-    let rules = new Array();
-    let suppliers = new Array();
-    try {
-        const mRes = await fetch(SUPABASE_URL + 'rest/v1/markups?select=*&order=price_from.asc', { headers: headers });
-        if (mRes.ok) rules = await mRes.json();
-        const sRes = await fetch(SUPABASE_URL + 'rest/v1/suppliers?is_active=eq.true&select=*', { headers: headers });
-        if (sRes.ok) suppliers = await sRes.json();
-    } catch (e) {
-        return res.status(500).json({ ok: false, error: 'Ошибка чтения базы: ' + e.message });
+  const SUP_KEY = process.env.SUPABASE_ANON_KEY;
+  const SB = process.env.SUPABASE_URL.replace(/\/$/, '');
+
+  let markups = [];
+  try {
+    const mkRes = await fetch(SB + '/rest/v1/markups?select=*', { headers: { apikey: SUP_KEY } });
+    if (mkRes.ok) markups = await mkRes.json();
+  } catch (e) {}
+  const getMarkup = (price) => {
+    let pct = 20;
+    for (const m of markups) {
+      const r = (m.range || '').split('-');
+      if (r.length === 2) {
+        const lo = parseFloat(r[0]), hi = parseFloat(r[1]);
+        if (!isNaN(lo) && !isNaN(hi) && price >= lo && price <= hi) { pct = Number(m.percent) || 0; break; }
+      }
     }
+    return pct;
+  };
 
-    if (!suppliers || suppliers.length === 0) {
-        return res.status(200).json({ ok: false, error: 'Нет активных поставщиков. Добавьте ключи в Админ-панели.' });
-    }
+  let suppliers = [];
+  try {
+    const url = SB + '/rest/v1/suppliers?select=*' + (testSupplierId ? '&id=eq.' + encodeURIComponent(testSupplierId) : '');
+    const supRes = await fetch(url, { headers: { apikey: SUP_KEY } });
+    if (supRes.ok) suppliers = await supRes.json();
+  } catch (e) {}
+  suppliers = suppliers.filter(s => s.active);
+  if (!suppliers.length) { res.status(200).json([]); return; }
 
-    function applyMarkup(buyPrice) {
-        let pct = 15;
-        for (let i = 0; i < rules.length; i++) {
-            if (buyPrice >= rules[i].price_from && buyPrice <= rules[i].price_to) {
-                pct = rules[i].percent;
-                break;
-            }
-        }
-        return Math.ceil(buyPrice * (1 + pct / 100));
-    }
+  const soapEnvelope = (keys, query) =>
+    `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <SearchArticle xmlns="http://api.rossko.ru/service/v2.2/GetSearch">
+      <KEY1>${keys.key1 || ''}</KEY1>
+      <KEY2>${keys.key2 || ''}</KEY2>
+      <TEXT>${query}</TEXT>
+    </SearchArticle>
+  </soap:Body>
+</soap:Envelope>`;
 
-    // Извлечение значения тега с учётом регистра и SOAP-префиксов вида ns1:
-    function tag(text, t) {
-        const m = text.match(new RegExp('<(?:[A-Za-z0-9]+:)?' + t + '>([\\s\\S]*?)</(?:[A-Za-z0-9]+:)?' + t + '>', 'i'));
+  const parseRossko = (xml) => {
+    const parts = [];
+    const norm = xml.replace(/\r?\n/g, ' ');
+    const partMatches = norm.match(/<\w*:?Part[\s\S]*?<\/\w*:?Part>/g) || [];
+    for (const pm of partMatches) {
+      const getTag = (tag) => {
+        const m = pm.match(new RegExp('<\\w*:?' + tag + '>([\\s\\S]*?)<\\/\\w*:?' + tag + '>'));
         return m ? m[1].trim() : '';
+      };
+      const partsList = pm.match(/<\w*:?Parts[\s\S]*?<\/\w*:?Parts>/g) || [];
+      for (const pl of partsList) {
+        const stockMatches = pl.match(/<\w*:?Stock[\s\S]*?<\/\w*:?Stock>/g) || [];
+        for (const st of stockMatches) {
+          const stockGet = (tag) => {
+            const m = st.match(new RegExp('<\\w*:?' + tag + '>([\\s\\S]*?)<\\/\\w*:?' + tag + '>'));
+            return m ? m[1].trim() : '';
+          };
+          parts.push({
+            brand: getTag('brand'),
+            code: getTag('partnumber') || getTag('code'),
+            name: getTag('description') || getTag('name'),
+            delivery: Number(stockGet('days')) || 0,
+            stock: stockGet('quantity'),
+            cost: parseFloat(stockGet('price')) || 0
+          });
+        }
+      }
     }
+    return parts;
+  };
 
-    const allOffers = new Array();
-    const ns = 'http://rossko.ru';
+  const results = [];
+  const dedup = new Set();
 
-    // 2. Опрашиваем каждого подключенного поставщика
-    for (let s = 0; s < suppliers.length; s++) {
-        const sup = suppliers[s];
-        if (!sup.key1 || !sup.key2) continue;
+  for (const sup of suppliers) {
+    try {
+      const resp = await fetch('https://api.rossko.ru/service/v2.2/GetSearch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/xml; charset=utf-8' },
+        body: soapEnvelope({ key1: sup.key1, key2: sup.key2 }, q)
+      });
+      const xml = await resp.text();
+      if (/<\w*:?Success>\s*false/i.test(xml)) continue;
+      const parts = parseRossko(xml);
+      for (const p of parts) {
+        const key = (p.brand + '|' + p.code + '|' + p.delivery).toLowerCase();
+        if (dedup.has(key)) continue;
+        dedup.add(key);
+        const cost = p.cost || 0;
+        const price = Math.round(cost * (1 + getMarkup(cost) / 100) * 100) / 100;
+        const days = p.delivery + (Number(sup.extra_days) || 0);
+        results.push({
+          brand: p.brand, code: p.code, name: p.name,
+          delivery: days, stock: p.stock, cost: cost, price: price
+        });
+      }
+    } catch (e) { /* продолжаем остальных */ }
+  }
 
-        const xmlBody = '<?xml version="1.0" encoding="utf-8"?>' +
-            '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
-            '<soap:Body><GetSearch xmlns="' + ns + '">' +
-            '<KEY1>' + sup.key1.trim() + '</KEY1><KEY2>' + sup.key2.trim() + '</KEY2>' +
-            '<text>' + query.replace(/[<>&'"]/g, '') + '</text>' +
-            '<delivery_id>000000001</delivery_id>' +
-            '</GetSearch></soap:Body></soap:Envelope>';
-
-        try {
-            const endpoint = 'https://api.rossko.ru/service/v2.1/GetSearch';
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': ns + 'GetSearch' },
-                body: xmlBody
-            });
-            const xmlText = await response.text();
-            if (/<success>\s*false\s*<\/success>/i.test(xmlText)) continue;
-
-            const partBlocks = xmlText.split(/<part>/i);
-            for (let i = 1; i < partBlocks.length; i++) {
-                const block = partBlocks[i].split(/<\/part>/i)[0];
-                const brand = tag(block, 'brand');
-                const partNumber = tag(block, 'partnumber');
-                const name = tag(block, 'name');
-                if (!partNumber) continue;
-
-                const stockBlocks = block.split(/<stock>/i);
-                for (let j = 1; j < stockBlocks.length; j++) {
-                    const sBlock = stockBlocks[j].split(/<\/stock>/i)[0];
-                    const priceRaw = parseFloat(tag(sBlock, 'price'));
-                    const count = parseInt(tag(sBlock, 'count'));
-                    const delivery = parseInt(tag(sBlock, 'delivery')) || 0;
-                    if (priceRaw > 0 && count > 0) {
-                        allOffers.push({
-                            brand: brand,
-                            art: partNumber,
-                            name: name,
-                            days: (delivery + (sup.extra_days || 1)) + ' дн.',
-                            stock: count,
-                            price: applyMarkup(priceRaw),
-                            cost: priceRaw
-                        });
-                    }
-                }
-            }
-        } catch (err) {}
-    }
-
-    allOffers.sort(function(a, b) { return a.price - b.price; });
-    return res.status(200).json({ ok: true, items: allOffers });
+  results.sort((a, b) => a.price - b.price);
+  res.status(200).json(results);
 }
