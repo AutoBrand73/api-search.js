@@ -1,147 +1,172 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoBrand73 — Магазин автозапчастей</title>
-    <script>
-        var SUPABASE_URL = 'https://fnlupijomjpopqtnyodv.supabase.co/rest/v1/';
-        var SUPABASE_KEY = 'sb_publishable_l1pVfFfga-1Tu9Yr1ms2Lw_PrY1CoZw';
-    </script>
-    <script src="https://tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoBrand73 — Магазин автозапчастей</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen font-sans">
+<body class="bg-slate-100 min-h-screen">
 
-    <!-- Верхняя панель -->
-    <div class="bg-slate-900 text-slate-300 text-xs py-2">
-        <div class="max-w-6xl mx-auto px-4 flex flex-wrap justify-between items-center gap-2">
-            <div>📍 г. Димитровград • 🕒 Ежедневно 09:00 – 17:00</div>
-            <div class="flex items-center gap-4">
-                <span class="text-white font-semibold">+7 (927) 834-39-93</span>
-                <button type="button" onclick="openVinModal()" class="text-blue-400 hover:underline">Запрос по VIN</button>
-            </div>
-        </div>
+<!-- верхняя полоса с контактами -->
+<div class="bg-slate-800 text-slate-200 text-sm">
+  <div class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap justify-between items-center gap-2">
+    <span>📍 г. Димитровград • 🕒 Ежедневно 09:00 – 17:00</span>
+    <div class="flex items-center gap-4">
+      <a href="tel:+79278343993" class="font-bold hover:text-white">+7 (927) 834-39-93</a>
+      <button type="button" onclick="openVinModal()" class="bg-blue-600 text-white px-3 py-1 rounded-lg font-semibold">Запрос по VIN</button>
     </div>
+  </div>
+</div>
 
-    <!-- Шапка сайта -->
-    <header class="bg-white shadow-sm sticky top-0 z-30">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <a href="#" onclick="showPage('shop'); return false;" class="flex items-center gap-2">
-                <div class="bg-blue-600 text-white font-bold text-xl px-2.5 py-1 rounded-lg">AB73</div>
-                <div>
-                    <div class="font-bold text-lg leading-none text-slate-900">Auto<span class="text-blue-600">Brand73</span></div>
-                    <div class="text-[11px] text-slate-500">Запчасти для иномарок</div>
-                </div>
-            </a>
-
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="showPage('shop')" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-100">Каталог</button>
-                <button type="button" id="nav-cabinet" onclick="showPage('cabinet')" class="hidden px-3 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700">Мои заказы</button>
-                <button type="button" id="nav-admin" onclick="showPage('admin')" class="hidden px-3 py-2 rounded-lg text-sm font-bold bg-amber-100 text-amber-900">⚙️ Админ-панель</button>
-                <button type="button" id="nav-auth" onclick="openAuthModal()" class="px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 hover:bg-slate-50">Войти</button>
-                <button type="button" id="nav-logout" onclick="logoutUser()" class="hidden px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-600">Выйти</button>
-                <button type="button" onclick="toggleCart()" class="flex items-center gap-1.5 bg-slate-900 text-white px-3.5 py-2 rounded-lg text-sm font-medium">
-                    <span>🛒</span>
-                    <span id="cart-badge" class="bg-amber-500 text-slate-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- СТРАНИЦА 1: МАГАЗИН И ПОИСК -->
-    <div id="page-shop" class="flex-1">
-        <section class="bg-blue-800 text-white py-10 px-4">
-            <div class="max-w-4xl mx-auto text-center">
-                <h1 class="text-2xl sm:text-3xl font-bold mb-2">Поиск автозапчастей по артикулу</h1>
-                <p class="text-blue-100 text-sm mb-6">Актуальные цены и сроки со складов поставщиков</p>
-                <form onsubmit="handleSearch(event)" class="flex flex-col sm:flex-row gap-2 max-w-2xl mx-auto">
-                    <input type="text" id="search-input" placeholder="Введите артикул (например: 0986424797)..." class="flex-1 px-4 py-3.5 rounded-lg text-slate-900 focus:outline-none text-base" required>
-                    <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-8 py-3.5 rounded-lg">Найти</button>
-                </form>
-                <div class="mt-3 text-xs text-blue-200">
-                    Не знаете артикул? <button type="button" onclick="openVinModal()" class="text-amber-300 underline font-semibold">Отправьте запрос по VIN-коду</button>
-                </div>
-            </div>
-        </section>
-
-        <main class="max-w-6xl mx-auto px-4 py-8">
-            <div id="loader" class="hidden py-10 text-center font-medium text-blue-700">⏳ Опрашиваем склады поставщиков...</div>
-            <div id="offers-list" class="space-y-3"></div>
-        </main>
+<!-- HEADER SECTION -->
+<header class="bg-white border-b sticky top-0 z-40">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('shop')">
+      <div class="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black">AB73</div>
+      <div>
+        <div class="font-black text-lg leading-tight">AutoBrand73</div>
+        <div class="text-xs text-slate-500">Запчасти для иномарок</div>
+      </div>
     </div>
+    <nav class="flex flex-wrap items-center gap-2">
+      <button type="button" onclick="showPage('shop')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100">Каталог</button>
+      <button type="button" id="nav-cabinet" onclick="showPage('cabinet')" class="hidden px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100">Мои заказы</button>
+      <button type="button" id="nav-admin" onclick="showPage('admin')" class="hidden px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100">⚙️ Админ-панель</button>
+      <button type="button" id="nav-auth" onclick="openAuthModal()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white">Войти</button>
+      <button type="button" id="nav-logout" onclick="logoutUser()" class="hidden px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100">Выйти</button>
+      <button type="button" onclick="toggleCart()" class="relative px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100">🛒<span id="cart-badge">0</span></button>
+    </nav>
+  </div>
+</header>
+<!-- END HEADER SECTION -->
 
-    <!-- СТРАНИЦА 2: ЛИЧНЫЙ КАБИНЕТ ПОКУПАТЕЛЯ -->
-    <div id="page-cabinet" class="hidden max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
-        <h2 class="text-2xl font-bold mb-2">Личный кабинет</h2>
-        <p id="cabinet-user-info" class="text-sm text-slate-500 mb-6"></p>
-        <h3 class="text-lg font-bold mb-3">История моих заказов</h3>
-        <div id="user-orders-list" class="space-y-3"></div>
+<main class="max-w-6xl mx-auto px-4 py-8">
+
+  <!-- страница магазина -->
+  <div id="page-shop">
+    <!-- FORM SECTION -->
+    <section class="bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-2xl p-8 mb-8">
+      <h1 class="text-2xl md:text-3xl font-black mb-2">Поиск автозапчастей по артикулу</h1>
+      <p class="text-blue-100 text-sm">Актуальные цены и сроки со складов поставщиков</p>
+      <form onsubmit="handleSearch(event)" class="mt-6 flex flex-col sm:flex-row gap-3 max-w-xl">
+        <input id="search-input" placeholder="Артикул, например P85023" class="flex-1 rounded-xl px-4 py-3 text-slate-900">
+        <button type="submit" class="bg-white text-blue-700 font-bold px-6 py-3 rounded-xl">Найти</button>
+      </form>
+    </section>
+    <!-- END FORM SECTION -->
+
+    <section class="mb-8">
+      <p class="text-slate-600 mb-2">Не знаете артикул?</p>
+      <button type="button" onclick="openVinModal()" class="bg-white border px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-50">Отправьте запрос по VIN-коду</button>
+    </section>
+
+    <!-- MAIN SECTION -->
+    <section>
+      <div id="loader" class="hidden bg-white p-6 rounded-xl border text-center">⏳ Опрашиваем склады поставщиков...</div>
+      <div id="offers-list" class="space-y-3"></div>
+    </section>
+    <!-- END MAIN SECTION -->
+  </div>
+
+  <!-- личный кабинет -->
+  <div id="page-cabinet" class="hidden">
+    <h1 class="text-2xl font-black mb-4">Личный кабинет</h1>
+    <div id="cabinet-user-info" class="bg-white p-4 rounded-xl border mb-6"></div>
+    <h2 class="font-bold mb-3">Мои заказы</h2>
+    <div id="user-orders-list" class="space-y-3"></div>
+  </div>
+
+  <!-- админ-панель -->
+  <div id="page-admin" class="hidden">
+    <h1 class="text-2xl font-black mb-4">Админ-панель</h1>
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button type="button" id="tab-btn-orders" onclick="switchAdminTab('orders')" class="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white">Заказы</button>
+      <button type="button" id="tab-btn-suppliers" onclick="switchAdminTab('suppliers')" class="px-4 py-2 rounded-lg text-sm font-bold bg-white border">Поставщики</button>
+      <button type="button" id="tab-btn-markups" onclick="switchAdminTab('markups')" class="px-4 py-2 rounded-lg text-sm font-bold bg-white border">Наценки</button>
     </div>
-
-    <!-- СТРАНИЦА 3: АДМИН-ПАНЕЛЬ -->
-    <div id="page-admin" class="hidden max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
-        <h2 class="text-2xl font-bold mb-6">Панель управления магазином</h2>
-
-        <div class="flex gap-2 border-b pb-3 mb-6">
-            <button type="button" onclick="switchAdminTab('orders')" id="tab-btn-orders" class="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white">📦 Заказы клиентов</button>
-            <button type="button" onclick="switchAdminTab('suppliers')" id="tab-btn-suppliers" class="px-4 py-2 rounded-lg text-sm font-bold bg-white border">🔌 Поставщики и ключи API</button>
-            <button type="button" onclick="switchAdminTab('markups')" id="tab-btn-markups" class="px-4 py-2 rounded-lg text-sm font-bold bg-white border">📈 Наценки (%)</button>
-        </div>
-
-        <!-- Вкладка Админки 1: Заказы -->
-        <div id="admin-tab-orders" class="space-y-3"></div>
-
-        <!-- Вкладка Админки 2: Поставщики -->
-        <div id="admin-tab-suppliers" class="hidden space-y-6">
-            <div class="bg-white p-5 rounded-xl border">
-                <h3 class="font-bold mb-3">Добавить поставщика (Rossko API)</h3>
-                <form onsubmit="addSupplier(event)" class="grid sm:grid-cols-5 gap-3">
-                    <input type="text" id="sup-name" placeholder="Название (например: Rossko)" class="border rounded-lg px-3 py-2 text-sm" required>
-                    <input type="text" id="sup-key1" placeholder="KEY1" class="border rounded-lg px-3 py-2 text-sm font-mono" required>
-                    <input type="text" id="sup-key2" placeholder="KEY2" class="border rounded-lg px-3 py-2 text-sm font-mono" required>
-                    <input type="number" id="sup-days" value="1" min="0" placeholder="+ дней доставки" class="border rounded-lg px-3 py-2 text-sm" required>
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg px-4 py-2 text-sm">Добавить</button>
-                </form>
-            </div>
-            <div id="admin-suppliers-list" class="space-y-2"></div>
-        </div>
-
-        <!-- Вкладка Админки 3: Наценки -->
-        <div id="admin-tab-markups" class="hidden space-y-4">
-            <div id="admin-markups-list" class="bg-white p-5 rounded-xl border space-y-3"></div>
-        </div>
+    <div id="admin-tab-orders" class="space-y-3"></div>
+    <div id="admin-tab-suppliers" class="hidden space-y-3">
+      <div id="admin-suppliers-list" class="space-y-3"></div>
     </div>
-
-    <!-- Модальное окно Вход / Регистрация -->
-    <div id="auth-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="auth-title" class="text-lg font-bold">Вход в личный кабинет</h3>
-                <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-black text-2xl">&times;</button>
-            </div>
-            <form onsubmit="handleAuth(event)" class="space-y-3">
-                <input type="email" id="auth-email" placeholder="Ваш Email" class="w-full border rounded-lg px-3 py-2 text-sm" required>
-                <input type="password" id="auth-pass" placeholder="Пароль (минимум 6 символов)" minlength="6" class="w-full border rounded-lg px-3 py-2 text-sm" required>
-                <div id="reg-fields" class="hidden space-y-3">
-                    <input type="text" id="auth-name" placeholder="Ваше имя" class="w-full border rounded-lg px-3 py-2 text-sm">
-                    <input type="tel" id="auth-phone" placeholder="Телефон для связи" class="w-full border rounded-lg px-3 py-2 text-sm">
-                    <input type="text" id="auth-vin" placeholder="VIN автомобиля (необязательно)" class="w-full border rounded-lg px-3 py-2 text-sm uppercase">
-                </div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm">Войти</button>
-            </form>
-            <div class="mt-4 text-center text-xs text-slate-500">
-                <button type="button" id="auth-switch-btn" onclick="toggleAuthMode()" class="text-blue-600 underline">Нет аккаунта? Зарегистрироваться</button>
-            </div>
-        </div>
+    <div id="admin-tab-markups" class="hidden space-y-3">
+      <div id="admin-markups-list" class="space-y-3"></div>
     </div>
+  </div>
 
-    <!-- Модальное окно VIN -->
-    <div id="vin-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold">Запрос подбора по VIN</h3>
-                <button type="button" onclick="closeVinModal()" class="text-slate-400 hover:text-black text-2xl">&times;</button>
-            </div>
-            <form onsubmit="submitVinOrder(event)" class="space-y-3">
-                <input type="text" id="vin-code" maxlength="17" minlength="17" placeholder="VIN-код (17 символов)" class="w-full border rounded-lg px-3 py-2 text-sm uppercase font-mono" required>
-                <textarea id="vin-parts" rows="3" placeholder="Какие запчасти нужны?" class="w-full border rounded-lg px-3 py-2 text-sm" required></textarea>
+</main>
+
+<footer class="mt-12 bg-white border-t">
+  <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-slate-500 flex flex-wrap justify-between gap-4">
+    <div>
+      <div class="font-black text-slate-800">AutoBrand73</div>
+      <div>Запчасти для иномарок • Димитровград</div>
+    </div>
+    <div>
+      <div>Ежедневно 09:00 – 17:00</div>
+      <a href="tel:+79278343993" class="font-bold text-blue-700">+7 (927) 834-39-93</a>
+    </div>
+  </div>
+</footer>
+
+<!-- корзина -->
+<div id="cart-drawer" class="hidden fixed inset-0 z-50 bg-black/40">
+  <div class="bg-white w-full md:w-96 h-full ml-auto p-5 flex flex-col">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-black">Корзина</h2>
+      <button type="button" onclick="toggleCart()" class="text-2xl px-2">✕</button>
+    </div>
+    <div id="cart-items" class="flex-1 space-y-2 overflow-y-auto"></div>
+    <div class="border-t pt-4 mt-4">
+      <div class="flex justify-between font-bold mb-3"><span>Итого:</span><span id="cart-total">0 ₽</span></div>
+      <form id="checkout-form" onsubmit="submitCartOrder(event)" class="hidden space-y-2">
+        <input id="ord-name" placeholder="Ваше имя" class="w-full border rounded-lg px-3 py-2">
+        <input id="ord-phone" placeholder="Телефон" class="w-full border rounded-lg px-3 py-2">
+        <input id="ord-vin" placeholder="VIN (необязательно)" class="w-full border rounded-lg px-3 py-2 uppercase">
+        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Оформить заказ</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- модальное окно авторизации -->
+<div id="auth-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 p-4">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+    <div class="flex justify-between items-center mb-4">
+      <h2 id="auth-title" class="text-lg font-black">Вход в личный кабинет</h2>
+      <button type="button" onclick="closeAuthModal()" class="text-2xl px-2">✕</button>
+    </div>
+    <form onsubmit="handleAuth(event)" class="space-y-3">
+      <div id="reg-fields" class="hidden space-y-3">
+        <input id="auth-name" placeholder="Имя" class="w-full border rounded-lg px-3 py-2">
+        <input id="auth-phone" placeholder="Телефон" class="w-full border rounded-lg px-3 py-2">
+        <input id="auth-vin" placeholder="VIN автомобиля (необязательно)" class="w-full border rounded-lg px-3 py-2 uppercase">
+      </div>
+      <input id="auth-email" type="email" required placeholder="Email" class="w-full border rounded-lg px-3 py-2">
+      <input id="auth-pass" type="password" required minlength="6" placeholder="Пароль" class="w-full border rounded-lg px-3 py-2">
+      <button id="auth-submit-btn" type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Войти</button>
+    </form>
+    <button type="button" id="auth-switch-btn" onclick="toggleAuthMode()" class="w-full mt-3 text-sm text-blue-600">Нет аккаунта? Зарегистрироваться</button>
+  </div>
+</div>
+
+<!-- модальное окно запроса по VIN -->
+<div id="vin-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 p-4">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-black">Запрос по VIN-коду</h2>
+      <button type="button" onclick="closeVinModal()" class="text-2xl px-2">✕</button>
+    </div>
+    <form onsubmit="submitVinOrder(event)" class="space-y-3">
+      <input id="vin-name" required placeholder="Ваше имя" class="w-full border rounded-lg px-3 py-2">
+      <input id="vin-phone" required placeholder="Телефон" class="w-full border rounded-lg px-3 py-2">
+      <input id="vin-code" required placeholder="VIN-код автомобиля" class="w-full border rounded-lg px-3 py-2 uppercase">
+      <textarea id="vin-parts" required placeholder="Какие запчасти нужны?" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea>
+      <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Отправить запрос</button>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
